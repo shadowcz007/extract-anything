@@ -3,7 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-Grounded-Segment-Anything/checkpoints/
+checkpoints/
 
 # C extensions
 *.so
