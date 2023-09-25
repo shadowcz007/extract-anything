@@ -524,6 +524,7 @@ def relate_anything(input_image, k):
 mask_source_draw = "draw a mask on input image"
 mask_source_segment = "type what to detect below"
 
+# 运行任务
 def run_anything_task(input_image, text_prompt, task_type, inpaint_prompt, box_threshold, text_threshold, 
             iou_threshold, inpaint_mode, mask_source_radio, remove_mode, remove_mask_extend, num_relation, kosmos_input, cleaner_size_limit=1080):
     if (task_type == 'Kosmos-2'):
@@ -805,19 +806,20 @@ if __name__ == "__main__":
     with block:
         with gr.Row():
             with gr.Column():
-                input_image = gr.Image(source='upload', elem_id="image_upload", tool='sketch', type='pil', label="Upload")    
+                input_image = gr.Image(source='upload', elem_id="image_upload", tool='sketch', type='pil', label="上传图片")    
                 task_type = gr.Radio(task_types,  value="detection", 
-                                                label='Task type', visible=True) 
+                                                label='任务类型', visible=True) 
                 mask_source_radio = gr.Radio([mask_source_draw, mask_source_segment], 
                                     value=mask_source_segment, label="Mask from",
                                     visible=False) 
+                
                 text_prompt = gr.Textbox(label="Detection Prompt[To detect multiple objects, seperating each name with '.', like this: cat . dog . chair ]", placeholder="Cannot be empty")                                                
                 inpaint_prompt = gr.Textbox(label="Inpaint Prompt (if this is empty, then remove)", visible=False)
                 num_relation = gr.Slider(label="How many relations do you want to see", minimum=1, maximum=20, value=5, step=1, visible=False)
                 
                 kosmos_input = gr.Radio(["Brief", "Detailed"], label="Kosmos Description Type", value="Brief", visible=False)
 
-                run_button = gr.Button(label="Run", visible=True)
+                run_button = gr.Button(label="运行", visible=True)
                 with gr.Accordion("Advanced options", open=False) as advanced_options:
                     box_threshold = gr.Slider(
                         label="Box Threshold", minimum=0.0, maximum=1.0, value=0.3, step=0.001
@@ -827,7 +829,7 @@ if __name__ == "__main__":
                     )
                     iou_threshold = gr.Slider(
                         label="IOU Threshold", minimum=0.0, maximum=1.0, value=0.8, step=0.001
-                    )                    
+                    )
                     inpaint_mode = gr.Radio(["merge", "first"], value="merge", label="inpaint_mode")
                     with gr.Row():
                         with gr.Column(scale=1):
