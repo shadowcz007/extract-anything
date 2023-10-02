@@ -527,6 +527,7 @@ mask_source_segment = "type what to detect below"
 # 运行任务
 def run_anything_task(input_image, text_prompt, task_type, inpaint_prompt, box_threshold, text_threshold, 
             iou_threshold, inpaint_mode, mask_source_radio, remove_mode, remove_mask_extend, num_relation, kosmos_input, cleaner_size_limit=1080):
+    print('run_anything_task:::input_image', input_image['mask'])
     if (task_type == 'Kosmos-2'):
         global kosmos_model, kosmos_processor
         kosmos_image, kosmos_text, kosmos_entities = kosmos_generate_predictions(input_image, kosmos_input, kosmos_model, kosmos_processor)

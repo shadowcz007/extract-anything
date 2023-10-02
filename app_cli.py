@@ -87,8 +87,8 @@ kosmos_processor = None
 def get_args():
     argparser = argparse.ArgumentParser()
     argparser.add_argument("--input_image", "-i", type=str, default="", help="")
-    argparser.add_argument("--text", "-t", type=str, default="", help="")
-    argparser.add_argument("--output_image", "-o", type=str, default="", help="")
+    argparser.add_argument("--text", "-t", type=str, default="anything,human,person,logo,object", help="")
+    argparser.add_argument("--output_image", "-o", type=str, default="test.png", help="")
     args = argparser.parse_args()
     return args
 
@@ -108,9 +108,36 @@ if __name__ == '__main__':
     load_lama_cleaner_model()
     # load_ram_model()
 
-    input_image = Image.open(args.input_image)
+    input_image = {'image':Image.open(args.input_image),'mask':Image.open(args.input_image)}
 
-    output_images, _ = run_anything_task(input_image = input_image, 
+    # input_image={'image': <PIL.Image.Image image mode=RGB size=512x512 at 0x157B8B38760>, 
+    #  'mask': <PIL.Image.Image image mode=RGB size=512x512 at 0x157B8B3A410>} 
+    
+    # text= anything
+    
+    # task_type=remove
+
+    # box_threshold=0.3 
+    
+    # text_threshold=0.25 
+    
+    # iou_threshold=0.8 
+    
+    # inpaint_mode=merge 
+    
+    # mask_source_radio=type what to detect below 
+
+    # remove_mode=segment 
+
+    # remove_mask_extend=10 
+    
+    # num_relation=5 
+
+    # kosmos_input=Brief 
+    
+    # cleaner_size_limit=1080
+
+    result = run_anything_task(input_image = input_image, 
                         text_prompt = args.text,  
                         task_type = 'remove', 
                         inpaint_prompt = '', 
@@ -125,6 +152,7 @@ if __name__ == '__main__':
                         kosmos_input = None,
                         cleaner_size_limit = -1,
                         )
+    print(result)
     if len(output_images) > 0:
         logger.info(f'save result to {args.output_image} ... ')        
         output_images[-1].save(args.output_image)
