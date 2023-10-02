@@ -146,19 +146,21 @@ if __name__ == '__main__':
                         iou_threshold = 0.8, 
                         inpaint_mode = "merge", 
                         mask_source_radio = "type what to detect below", 
-                        remove_mode = "rectangle",   # ["segment", "rectangle"]
+                        remove_mode = "segment",   # ["segment", "rectangle"]
                         remove_mask_extend = "10", 
                         num_relation = 5,
                         kosmos_input = None,
                         cleaner_size_limit = -1,
                         )
-    print(result)
+   
+    output_images=result[0]
+   
     if len(output_images) > 0:
-        logger.info(f'save result to {args.output_image} ... ')        
-        output_images[-1].save(args.output_image)
-        # count = 0
-        # for output_image in output_images:
-        #     count += 1
-        #     if isinstance(output_image, np.ndarray):
-        #         output_image = PIL.Image.fromarray(output_image.astype(np.uint8))
-        #     output_image.save(args.output_image.replace(".",  f"_{count}."))
+        # logger.info(f'save result to {args.output_image} ... ')        
+        # output_images[-1].save(args.output_image)
+        count = 0
+        for output_image in output_images:
+            count += 1
+            if isinstance(output_image, np.ndarray):
+                output_image = PIL.Image.fromarray(output_image.astype(np.uint8))
+            output_image.save(args.output_image.replace(".",  f"_{count}."))
