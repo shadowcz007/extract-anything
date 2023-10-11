@@ -157,7 +157,7 @@ def mask_image(im1p,im2p,resp):
     # Save the result with transparent background as PNG
     # 将图像转换为Base64编码
     ret, buffer = cv2.imencode('.png', transparent_image)
-    base64_image = base64.b64encode(buffer)
+    base64_image = base64.b64encode(buffer).decode('utf-8')
 
     # cv2.imwrite(resp, im1, [cv2.IMWRITE_PNG_COMPRESSION, 0])
     # cv.imshow('res',im1)
