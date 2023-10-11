@@ -114,9 +114,12 @@ else:
 
 def mask_image(im1p,im2p,resp):
     print(im1p,im2p,resp)
+    
     # Load two images
-    im1 = cv2.imread(im1p) # 背景
-    im2 = cv2.imread(im2p) # logo
+    im1 = cv2.cvtColor(np.array(im1p), cv2.COLOR_RGB2BGR)
+    im2 = cv2.cvtColor(np.array(im2p), cv2.COLOR_RGB2BGR)
+    # im1 = cv2.imread(im1p) # 背景
+    # im2 = cv2.imread(im2p) # logo
 
     # I want to put logo on top-left corner, So I create a ROI
     rows,cols,channels = im2.shape
@@ -128,8 +131,8 @@ def mask_image(im1p,im2p,resp):
     mask_inv = cv2.bitwise_not(mask)
 
     # Convert the mask to 3 channels
-    mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
-    mask_inv = cv2.cvtColor(mask_inv, cv2.COLOR_GRAY2BGR)
+    # mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
+    # mask_inv = cv2.cvtColor(mask_inv, cv2.COLOR_GRAY2BGR)
 
     # cv.imshow('mask',mask_inv)
     # Now black-out the area of logo in ROI
@@ -142,11 +145,25 @@ def mask_image(im1p,im2p,resp):
     dst = cv2.add(im1_bg,im2_fg)
     im1[0:rows, 0:cols ] = dst
 
+    image_rgba = cv2.cvtColor(im1, cv2.COLOR_BGR2BGRA)
+    # 创建一个与图像大小相同的透明图像
+    transparent_image = np.zeros_like(image_rgba)
+
+    # 使用掩码将黑色背景转换为透明
+    mask1 = np.all(im1[:, :, :3] == [0, 0, 0], axis=-1)
+    transparent_image[mask1] = [0, 0, 0, 0]
+    transparent_image[~mask1] = image_rgba[~mask1]
+
     # Save the result with transparent background as PNG
-    cv2.imwrite(resp, im1, [cv2.IMWRITE_PNG_COMPRESSION, 0])
+    # 将图像转换为Base64编码
+    ret, buffer = cv2.imencode('.png', transparent_image)
+    base64_image = base64.b64encode(buffer)
+
+    # cv2.imwrite(resp, im1, [cv2.IMWRITE_PNG_COMPRESSION, 0])
     # cv.imshow('res',im1)
     # cv.waitKey(0)
     # cv.destroyAllWindows()
+    return "data:image/png;base64," + base64_image
 
 def im_to_base64( im):
     print('####', im)
@@ -161,7 +178,7 @@ def im_to_base64( im):
     f="png"
     if im.format!=None:
         f=im.format.lower()
-    return "data:image/" + f + ";base64," + image_base64,
+    return "data:image/" + f + ";base64," + image_base64
 
 
 app = FastAPI()
@@ -216,14 +233,15 @@ async def upload_file(file: UploadFile = File(...)):
                             )
     # print(result)
     images=result[0]
-    print(images)
+    print(len(images))
     # 返回处理结果
     
     return {
         "filename": file.filename, 
         "origin":im_to_base64(images[0]),
         "1":im_to_base64(images[1]),
-        "4":im_to_base64(images[4])
+        "4":im_to_base64(images[4]),
+        "result":mask_image(images[0],images[4],"")
         }
 
 
