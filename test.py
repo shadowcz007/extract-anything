@@ -1,20 +1,43 @@
-from gradio_client import Client
+from fastapi import FastAPI, UploadFile, File
+from fastapi.middleware.cors import CORSMiddleware
+from starlette.responses import HTMLResponse
+from PIL import Image
+import base64,io
 
-client = Client("http://127.0.0.1:7860/")
-result = client.predict(
-				"https://rich-text-to-image.github.io/image_assets/color_tri.png",	# str (filepath or URL to image) in 'Upload' Image component
-				"anything",	# str in 'Detection Prompt[To detect multiple objects, seperating each name with '.', like this: cat . dog . chair ]' Textbox component
-				"remove",	# str in 'Task type' Radio component
-				"anything",	# str in 'Inpaint Prompt (if this is empty, then remove)' Textbox component
-				0,	# int | float (numeric value between 0.0 and 1.0) in 'Box Threshold' Slider component
-				0,	# int | float (numeric value between 0.0 and 1.0) in 'Text Threshold' Slider component
-				0,	# int | float (numeric value between 0.0 and 1.0) in 'IOU Threshold' Slider component
-				"merge",	# str in 'inpaint_mode' Radio component
-				"type what to detect below",	# str in 'Mask from' Radio component
-				"segment",	# str in 'remove mode' Radio component
-				"10",	# str in 'remove_mask_extend' Textbox component
-				3,	# int | float (numeric value between 1 and 20) in 'How many relations do you want to see' Slider component
-				"Detailed",	# str in 'Kosmos Description Type' Radio component
-				fn_index=2
+app = FastAPI()
+
+# 添加跨域中间件
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-print(result)
+
+@app.get("/")
+def read_root():
+    return HTMLResponse("""
+        <html>
+        <body>
+            <form action="/upload" enctype="multipart/form-data" method="post">
+                <input name="file" type="file">
+                <input type="submit">
+            </form>
+        </body>
+        </html>
+    """)
+
+@app.post("/upload")
+async def upload_file(file: UploadFile = File(...)):
+    contents = await file.read()
+    image = Image.open(io.BytesIO(contents))
+    image_base64 = base64.b64encode(contents).decode("utf-8")
+
+    # 在这里添加对上传图片的处理逻辑
+    # 返回处理结果，包括Base64编码的图片
+    return {"filename": file.filename, "image_base64":"data:image/" + image.format.lower() + ";base64," + image_base64}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=3033)

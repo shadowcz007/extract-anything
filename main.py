@@ -23,7 +23,7 @@ import gradio as gr
 
 import argparse
 
-import copy
+import copy,base64
 
 import numpy as np
 import torch
@@ -60,11 +60,9 @@ from ram_train_eval import RamModel,RamPredictor
 from mmengine.config import Config as mmengine_Config
 from app import *
 
-import uvicorn
-from fastapi import File
-from fastapi import FastAPI
-from fastapi import UploadFile
+from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.responses import HTMLResponse
 
 
 config_file = 'GroundingDINO/groundingdino/config/GroundingDINO_SwinT_OGC.py'
@@ -73,7 +71,7 @@ ckpt_filenmae = "groundingdino_swint_ogc.pth"
 # sam_checkpoint = './sam_vit_h_4b8939.pth' 
 sam_checkpoint = './checkpoints/sam_vit_h_4b8939.pth' 
 output_dir = "outputs"
-device = 'cpu'
+device = 'cuda'
 
 # lama的模型存储位置,保存到项目所在
 os.environ['TORCH_HOME']="./checkpoints"
@@ -150,31 +148,58 @@ def mask_image(im1p,im2p,resp):
     # cv.waitKey(0)
     # cv.destroyAllWindows()
 
-def create_app():
-    app = FastAPI()
+def im_to_base64( im):
+    print('####', im)
+    # 转换为字节流
+    image_byte = BytesIO()
+    im.save(image_byte, format="PNG")
+    image_byte = image_byte.getvalue()
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=['*'],
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    # 转换为Base64编码
+    image_base64 = base64.b64encode(image_byte).decode("utf-8")
+    # print('####',image_base64)
+    f="png"
+    if im.format!=None:
+        f=im.format.lower()
+    return "data:image/" + f + ";base64," + image_base64,
 
 
+app = FastAPI()
 
-    @app.get("/")
-    def read_root():
-        return {"message": "Welcome from the API"}
+# 添加跨域中间件
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
+@app.get("/")
+def read_root():
+    return HTMLResponse("""
+        <html>
+        <body>
+            <form action="/upload" enctype="multipart/form-data" method="post">
+                <input name="file" type="file">
+                <input type="submit">
+            </form>
+        </body>
+        </html>
+    """)
 
-    @app.post("/{style}")
-    def create_image(style: str, file: UploadFile = File(...)):
+@app.post("/upload")
+async def upload_file(file: UploadFile = File(...)):
+    contents = await file.read()
+    image = Image.open(BytesIO(contents))
+  
+    # 在这里添加对上传图片的处理逻辑
+    # 返回处理结果，包括Base64编码的图片
+    input_image = {'image':image,'mask':image}
 
-        input_image = {'image':Image.open(file.file),'mask':Image.open(file.file)}
+    text='anything,human,person,logo,object'
 
-        text='anything,human,person,logo,object'
-
-        result = run_anything_task(input_image = input_image, 
+    result = run_anything_task(input_image = input_image, 
                             text_prompt =text,  
                             task_type = 'remove', 
                             inpaint_prompt = '', 
@@ -189,12 +214,23 @@ def create_app():
                             kosmos_input = None,
                             cleaner_size_limit = -1,
                             )
-        print(result)
-        return {"name": 'name'}
+    # print(result)
+    images=result[0]
+    print(images)
+    # 返回处理结果
+    
+    return {
+        "filename": file.filename, 
+        "origin":im_to_base64(images[0]),
+        "1":im_to_base64(images[1]),
+        "4":im_to_base64(images[4])
+        }
 
 
 
 if __name__ == '__main__':
+    import uvicorn
+
     args = get_args()
     logger.info(f'\nargs={args}\n')
 
@@ -207,8 +243,7 @@ if __name__ == '__main__':
     load_lama_cleaner_model()
     # load_ram_model()
 
-    uvicorn.run("main:create_app", host="0.0.0.0", port=3033)
-
+    uvicorn.run(app, host="0.0.0.0", port=3033)
     # input_image = {'image':Image.open(args.input_image),'mask':Image.open(args.input_image)}
 
     # input_image={'image': <PIL.Image.Image image mode=RGB size=512x512 at 0x157B8B38760>, 
