@@ -28,3 +28,6 @@ sentencepiece
 lama-cleaner==1.1.2
 openmim==0.1.5
 mmcv==2.0.0
+
+fastapi
+uvicorn
