@@ -50,6 +50,14 @@ from .utils import MLP, ContrastiveEmbed, sigmoid_focal_loss
 
 class GroundingDINO(nn.Module):
     """This is the Cross-Attention Detector module that performs object detection"""
+    print('######text_encoder_type',__file__)
+
+    import os
+    root_dir = os.getcwd()
+    
+    # 本地模型文件
+    local_bert=os.path.join(root_dir,'checkpoints/bert-base-uncased')
+    print('######text_encoder_type',local_bert)
 
     def __init__(
         self,
@@ -71,7 +79,7 @@ class GroundingDINO(nn.Module):
         dn_box_noise_scale=0.4,
         dn_label_noise_ratio=0.5,
         dn_labelbook_size=100,
-        text_encoder_type="bert-base-uncased",
+        text_encoder_type=local_bert, #"bert-base-uncased",
         sub_sentence_present=True,
         max_text_len=256,
     ):
@@ -109,6 +117,7 @@ class GroundingDINO(nn.Module):
         self.bert.pooler.dense.weight.requires_grad_(False)
         self.bert.pooler.dense.bias.requires_grad_(False)
         self.bert = BertModelWarper(bert_model=self.bert)
+        print('#####bert',self.bert)
 
         self.feat_map = nn.Linear(self.bert.config.hidden_size, self.hidden_dim, bias=True)
         nn.init.constant_(self.feat_map.bias.data, 0)
