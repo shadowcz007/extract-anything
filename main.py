@@ -214,7 +214,8 @@ async def upload_file(file: UploadFile = File(...)):
     # 返回处理结果，包括Base64编码的图片
     input_image = {'image':image,'mask':image}
 
-    text='anything,human,person,logo,object'
+    # 需要定义prompt来实现更好的抠图效果
+    text='anything,human,person,logo,object,fruit'
 
     result = run_anything_task(input_image = input_image, 
                             text_prompt =text,  
@@ -235,14 +236,18 @@ async def upload_file(file: UploadFile = File(...)):
     images=result[0]
     print(len(images))
     # 返回处理结果
-    
-    return {
-        "filename": file.filename, 
-        "origin":im_to_base64(images[0]),
-        "1":im_to_base64(images[1]),
-        "4":im_to_base64(images[4]),
-        "result":mask_image(images[0],images[4],"")
-        }
+    if len(images)>0:
+        return {
+            "filename": file.filename, 
+            "origin":im_to_base64(images[0]),
+            "1":im_to_base64(images[1]),
+            "4":im_to_base64(images[4]),
+            "result":mask_image(images[0],images[4],"")
+            }
+    else:
+        {
+            "filename": file.filename,            
+            }
 
 
 

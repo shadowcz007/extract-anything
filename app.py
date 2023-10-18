@@ -105,7 +105,8 @@ def load_model_hf(model_config_path, repo_id, filename, device='cpu'):
     model = build_model(args)
     args.device = device
     # 保存到本地路径 https://huggingface.co/docs/huggingface_hub/v0.14.1/guides/download
-    cache_file = hf_hub_download(repo_id=repo_id, filename=filename,local_dir="./checkpoints/hf_hub",local_dir_use_symlinks=False)
+    # cache_file = hf_hub_download(repo_id=repo_id, filename=filename,local_dir="./checkpoints/hf_hub",local_dir_use_symlinks=False)
+    cache_file='./checkpoints/hf_hub/groundingdino_swint_ogc.pth'
     checkpoint = torch.load(cache_file, map_location=device)
     log = model.load_state_dict(clean_state_dict(checkpoint['model']), strict=False)
     print("Model loaded from {} \n => {}".format(cache_file, log))
