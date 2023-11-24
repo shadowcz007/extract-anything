@@ -165,13 +165,49 @@ def mask_image(im1p,im2p,resp):
     # cv.destroyAllWindows()
     return "data:image/png;base64," + base64_image
 
-def im_to_base64( im):
-    print('####', im)
+
+def process_image(image, start_offset=18, feathering_weight=0.8):
+    # Open the image using PIL
+    image =image.convert("L")
+    if start_offset<0:
+        image=ImageOps.invert(image)
+
+    # Convert the image to a numpy array
+    image_np = np.array(image)
+
+    # Use Canny edge detection to get black contours
+    edges = cv2.Canny(image_np, 30, 150)
+
+    for i in range(0,abs(start_offset)):
+        # int(100*feathering_weight)
+        a=int(abs(start_offset)*0.1*i)
+        # Dilate the black contours to make them wider
+        kernel = np.ones((a, a), np.uint8)
+
+        dilated_edges = cv2.dilate(edges, kernel, iterations=1)
+        # dilated_edges = cv2.erode(edges, kernel, iterations=1)
+        # Smooth the dilated edges using Gaussian blur
+        smoothed_edges = cv2.GaussianBlur(dilated_edges, (5, 5), 0)
+
+        # Adjust the feathering weight
+        feathering_weight = max(0, min(feathering_weight, 1))
+
+        # Blend the smoothed edges with the original image to achieve feathering effect
+        image_np = cv2.addWeighted(image_np, 1, smoothed_edges, feathering_weight, feathering_weight)
+
+    # Convert the result back to PIL image
+    result_image = Image.fromarray(np.uint8(image_np))
+    if start_offset<0:
+        result_image=ImageOps.invert(result_image)
+    return result_image
+
+
+def im_to_base64(im):
+    # print('####', im)
     # 转换为字节流
     image_byte = BytesIO()
     im.save(image_byte, format="PNG")
     image_byte = image_byte.getvalue()
-
     # 转换为Base64编码
     image_base64 = base64.b64encode(image_byte).decode("utf-8")
     # print('####',image_base64)
@@ -237,11 +273,15 @@ async def upload_file(file: UploadFile = File(...)):
     print(len(images))
     # 返回处理结果
     if len(images)>0:
+        im5 = ImageOps.invert(images[4])
         return {
             "filename": file.filename, 
             "origin":im_to_base64(images[0]),
             "1":im_to_base64(images[1]),
-            "4":im_to_base64(images[4]),
+            "4":im_to_base64(images[4]),#遮罩图:白色为物体
+            "5":im_to_base64(im5),#反转图：黑色为物体,
+            "6":im_to_base64(process_image(images[4],18,1)),#向外扩充18
+            "7":im_to_base64(process_image(images[4],-18,1)),#向内缩减18
             "result":mask_image(images[0],images[4],"")
             }
     else:
