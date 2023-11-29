@@ -60,7 +60,7 @@ from ram_train_eval import RamModel,RamPredictor
 from mmengine.config import Config as mmengine_Config
 from app import *
 
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File,Form
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import HTMLResponse
 
@@ -166,6 +166,31 @@ def mask_image(im1p,im2p,resp):
     return "data:image/png;base64," + base64_image
 
 
+# 黑色为孔洞和背景
+def fill(img, num_fill=1):
+    img = img.convert('L')
+    img = np.array(img)
+    
+    # Find contours
+    contours, hierarchy = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    
+    # Sort contours by area
+    contours = sorted(contours, key=cv2.contourArea,reverse=True)
+    
+    # Initialize output image
+    out_img = np.zeros((img.shape[0], img.shape[1]))
+    
+    # Fill contours
+    for i in range(len(contours)):
+        cnt = contours[i]
+        area = cv2.contourArea(cnt)
+        print("Contour area:", area)
+        
+        cv2.fillPoly(out_img, [cnt], color=255 if i<min(num_fill,len(contours) ) else 0)
+    
+    return Image.fromarray(out_img).convert('L')
+
+
 def process_image(image, start_offset=18, feathering_weight=0.8):
     # Open the image using PIL
     image =image.convert("L")
@@ -232,17 +257,59 @@ app.add_middleware(
 def read_root():
     return HTMLResponse("""
         <html>
-        <body>
-            <form action="/upload" enctype="multipart/form-data" method="post">
-                <input name="file" type="file">
-                <input type="submit">
-            </form>
-        </body>
-        </html>
+                        <style>
+                        img{width: 300px;
+    margin: 24px;}
+                        </style>
+<body>
+<form id="myForm" enctype="multipart/form-data">
+<input name="file" type="file">
+<input name="prompt" type="text" value="anything,human,person,logo,object,fruit">
+<input name="margin" type="number" value="12">
+                        <input name="fill_num" type="number" value="2">
+<input type="button" value="Submit" onclick="submitForm()">
+</form>
+
+    <div id="result"></div>
+
+    <script>
+        const createImg=(url)=>{
+                    var im=new Image()
+                    im.src=url;
+                    document.querySelector('#result').appendChild(im)
+        }
+        function submitForm() {
+            var form = document.getElementById("myForm");
+            var formData = new FormData(form);
+
+            fetch("/upload", {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                var result = document.getElementById("result");
+                        result.innerHTML='';
+                        createImg(data['origin'])
+                createImg(data['1'])
+                 createImg(data['4'])
+                        createImg(data['5'])
+                        createImg(data['6'])
+                        createImg(data['7'])
+                         createImg(data['8'])
+                        createImg(data['result'])
+            })
+            .catch(error => {
+                console.error("Error:", error);
+            });
+        }
+    </script>
+</body>
+</html>
     """)
 
 @app.post("/upload")
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(file: UploadFile = File(...), prompt: str = Form(...),margin: int = Form(...),fill_num: int = Form(...),):
     contents = await file.read()
     image = Image.open(BytesIO(contents))
   
@@ -251,7 +318,12 @@ async def upload_file(file: UploadFile = File(...)):
     input_image = {'image':image,'mask':image}
 
     # 需要定义prompt来实现更好的抠图效果
-    text='anything,human,person,logo,object,fruit'
+    text=prompt
+    if prompt==None or prompt == "":
+        text='anything,human,person,logo,object,fruit'
+
+    fill_num=fill_num
+
 
     result = run_anything_task(input_image = input_image, 
                             text_prompt =text,  
@@ -277,11 +349,12 @@ async def upload_file(file: UploadFile = File(...)):
         return {
             "filename": file.filename, 
             "origin":im_to_base64(images[0]),
-            "1":im_to_base64(images[1]),
+            "1":im_to_base64(images[1]),#识别出的物体区域
             "4":im_to_base64(images[4]),#遮罩图:白色为物体
             "5":im_to_base64(im5),#反转图：黑色为物体,
-            "6":im_to_base64(process_image(images[4],18,1)),#向外扩充18
-            "7":im_to_base64(process_image(images[4],-18,1)),#向内缩减18
+            "6":im_to_base64(process_image(images[4],margin,1)),#向外扩充18
+            "7":im_to_base64(process_image(images[4],-margin,1)),#向内缩减18
+            "8":im_to_base64(fill(images[4],fill_num)),#填充较小的孔洞,传入数量可以控制填充孔洞的数量
             "result":mask_image(images[0],images[4],"")
             }
     else:
