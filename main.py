@@ -299,6 +299,7 @@ def read_root():
 <input name="prompt" type="text" value="anything,human,person,logo,object,fruit">
 <input name="margin" type="number" value="12">
                         <input name="fill_num" type="number" value="2">
+                        <input name="blur" type="number" value="2">
 <input type="button" value="Submit" onclick="submitForm()">
 </form>
 
