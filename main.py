@@ -27,7 +27,7 @@ import copy,base64
 
 import numpy as np
 import torch
-from PIL import Image, ImageDraw, ImageFont, ImageOps
+from PIL import Image, ImageDraw, ImageFilter, ImageOps
 
 # Grounding DINO
 import GroundingDINO.groundingdino.datasets.transforms as T
@@ -166,6 +166,22 @@ def mask_image(im1p,im2p,resp):
     return "data:image/png;base64," + base64_image
 
 
+def has_transparency(image):
+    # image = Image.open(image_path)
+    if image.mode == 'RGBA':
+        alpha = image.split()[3]
+        return alpha.getbbox() is not None
+    return False
+
+# 调用示例
+# image_path = 'path_to_your_image.png'
+# if has_transparency(image_path):
+#     print("图片具有透明底")
+# else:
+#     print("图片没有透明底")
+
+
+
 # 黑色为孔洞和背景
 def fill(img, num_fill=1):
     img = img.convert('L')
@@ -242,6 +258,22 @@ def im_to_base64(im):
     return "data:image/" + f + ";base64," + image_base64
 
 
+def blur(image,radius=2):
+
+    # radius = 2
+
+    #创建平滑滤波器对象
+    smooth_filter = ImageFilter.SMOOTH_MORE
+
+    #调整滤波器的幅度
+    smooth_filter = smooth_filter(radius)
+
+    #应用平滑滤波器
+    smoothed_image = image.filter(smooth_filter)
+ 
+    return smoothed_image
+
+
 app = FastAPI()
 
 # 添加跨域中间件
@@ -308,22 +340,38 @@ def read_root():
 </html>
     """)
 
+
 @app.post("/upload")
-async def upload_file(file: UploadFile = File(...), prompt: str = Form(...),margin: int = Form(...),fill_num: int = Form(...),):
+async def upload_file(file: UploadFile = File(...), 
+                      prompt: str = Form(...),
+                      margin: int = Form(...),
+                      fill_num: int = Form(...),
+                      blur:int=Form(...)
+                      ):
     contents = await file.read()
     image = Image.open(BytesIO(contents))
-  
+    
+    if has_transparency(image):
+        print("图片具有透明底")
+        mask = image.split()[3] # 获取透明通道
+        mask=mask.convert("RGB")
+        image = image.convert("RGB") # 转换为RGB模式
+    else:
+        print("图片没有透明底")
+        mask=image.convert("RGB")
+        image=image.convert("RGB")
+
+
     # 在这里添加对上传图片的处理逻辑
     # 返回处理结果，包括Base64编码的图片
-    input_image = {'image':image,'mask':image}
+    input_image = {'image':image,'mask':mask}
 
     # 需要定义prompt来实现更好的抠图效果
     text=prompt
     if prompt==None or prompt == "":
         text='anything,human,person,logo,object,fruit'
 
-    fill_num=fill_num
-
+    
 
     result = run_anything_task(input_image = input_image, 
                             text_prompt =text,  
@@ -346,6 +394,7 @@ async def upload_file(file: UploadFile = File(...), prompt: str = Form(...),marg
     # 返回处理结果
     if len(images)>0:
         im5 = ImageOps.invert(images[4])
+        fill_mask=fill(images[4],fill_num)
         return {
             "filename": file.filename, 
             "origin":im_to_base64(images[0]),
@@ -354,8 +403,9 @@ async def upload_file(file: UploadFile = File(...), prompt: str = Form(...),marg
             "5":im_to_base64(im5),#反转图：黑色为物体,
             "6":im_to_base64(process_image(images[4],margin,1)),#向外扩充18
             "7":im_to_base64(process_image(images[4],-margin,1)),#向内缩减18
-            "8":im_to_base64(fill(images[4],fill_num)),#填充较小的孔洞,传入数量可以控制填充孔洞的数量
-            "result":mask_image(images[0],images[4],"")
+            "8":im_to_base64(fill_mask),#填充较小的孔洞,传入数量可以控制填充孔洞的数量
+            "9":im_to_base64(blur(fill_mask,blur)),
+            "result":mask_image(images[0],fill_mask,"")
             }
     else:
         {
