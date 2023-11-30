@@ -259,19 +259,17 @@ def im_to_base64(im):
 
 
 def blur(image,radius=2):
+    image =image.convert("L")
+    # Convert the image to a numpy array
+    image_np = np.array(image)
+    # Example usage
+    # image = cv2.imread('mask.png')  # Replace 'image.jpg' with your image file path
+    radius = 5  # Replace with your desired radius
 
-    # radius = 2
-
-    #创建平滑滤波器对象
-    smooth_filter = ImageFilter.SMOOTH_MORE
-
-    #调整滤波器的幅度
-    smooth_filter = smooth_filter(radius)
-
-    #应用平滑滤波器
-    smoothed_image = image.filter(smooth_filter)
- 
-    return smoothed_image
+    # Apply smoothing filter to the image
+    smoothed_image = cv2.blur(image_np, (radius, radius))
+    result_image = Image.fromarray(np.uint8(smoothed_image))
+    return result_image
 
 
 app = FastAPI()
@@ -336,6 +334,7 @@ def read_root():
                         createImg(data['6'])
                         createImg(data['7'])
                          createImg(data['8'])
+                        createImg(data['9'])
                         createImg(data['result'])
             })
             .catch(error => {

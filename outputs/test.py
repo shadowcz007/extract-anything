@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from PIL import Image
+from PIL import Image,ImageFilter
 
 
 
@@ -52,29 +52,18 @@ def fill(img):
 
 # res=fill(Image.open('mask.png'))
 # res.save('out_path.png')
+def smooth_filter(image, radius):
+    # Apply smoothing filter to the image
+    smoothed_image = cv2.blur(image, (radius, radius))
+    return smoothed_image
 
-def fill(img, num_fill):
-    img = img.convert('L')
-    img = np.array(img)
-    
-    # Find contours
-    contours, hierarchy = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    
-    # Sort contours by area
-    contours = sorted(contours, key=cv2.contourArea,reverse=True)
-    
-    # Initialize output image
-    out_img = np.zeros((img.shape[0], img.shape[1]))
-    
-    # Fill contours
-    for i in range(len(contours)):
-        cnt = contours[i]
-        area = cv2.contourArea(cnt)
-        print("Contour area:", area)
-        
-        cv2.fillPoly(out_img, [cnt], color=255 if i<min(num_fill,len(contours) ) else 0)
-    
-    return Image.fromarray(out_img).convert('L')
+# Example usage
+image = cv2.imread('mask.png')  # Replace 'image.jpg' with your image file path
+radius = 5  # Replace with your desired radius
 
-res = fill(Image.open('mask.png'), num_fill=1)
-res.save('out_path.png')
+smoothed_image = smooth_filter(image, radius)
+cv2.imshow('Smoothed Image', smoothed_image)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+
+
