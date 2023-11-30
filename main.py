@@ -290,16 +290,22 @@ def read_root():
     return HTMLResponse("""
         <html>
                         <style>
-                        img{width: 300px;
-    margin: 24px;}
+                        img{
+                            background:'gray';
+                            width: 300px;
+                            margin: 24px;}
                         </style>
 <body>
 <form id="myForm" enctype="multipart/form-data">
 <input name="file" type="file">
+                        <label for='prompt'>prompt</label>
 <input name="prompt" type="text" value="anything,human,person,logo,object,fruit">
+                        <label for='margin'>margin</label>
 <input name="margin" type="number" value="12">
+                        <label for='fill_num'>fill_num</label>
                         <input name="fill_num" type="number" value="2">
-                        <input name="blur" type="number" value="2">
+                        <label for='blur_num'>blur_num</label>
+                        <input name="blur_num" type="number" value="2">
 <input type="button" value="Submit" onclick="submitForm()">
 </form>
 
@@ -347,7 +353,7 @@ async def upload_file(file: UploadFile = File(...),
                       prompt: str = Form(...),
                       margin: int = Form(...),
                       fill_num: int = Form(...),
-                      blur:int=Form(...)
+                      blur_num:int=Form(...)
                       ):
     contents = await file.read()
     image = Image.open(BytesIO(contents))
@@ -405,7 +411,7 @@ async def upload_file(file: UploadFile = File(...),
             "6":im_to_base64(process_image(images[4],margin,1)),#向外扩充18
             "7":im_to_base64(process_image(images[4],-margin,1)),#向内缩减18
             "8":im_to_base64(fill_mask),#填充较小的孔洞,传入数量可以控制填充孔洞的数量
-            "9":im_to_base64(blur(fill_mask,blur)),
+            "9":im_to_base64(blur(fill_mask,blur_num)),
             "result":mask_image(images[0],fill_mask,"")
             }
     else:
