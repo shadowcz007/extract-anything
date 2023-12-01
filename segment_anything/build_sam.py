@@ -20,10 +20,6 @@ def build_sam_vit_h(checkpoint=None):
         checkpoint=checkpoint,
     )
 
-
-build_sam = build_sam_vit_h
-
-
 def build_sam_vit_l(checkpoint=None):
     return _build_sam(
         encoder_embed_dim=1024,
@@ -43,6 +39,7 @@ def build_sam_vit_b(checkpoint=None):
         checkpoint=checkpoint,
     )
 
+build_sam = build_sam_vit_b
 
 sam_model_registry = {
     "default": build_sam,

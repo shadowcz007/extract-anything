@@ -69,7 +69,10 @@ from kosmos_utils import *
 config_file = 'GroundingDINO/groundingdino/config/GroundingDINO_SwinT_OGC.py'
 ckpt_repo_id = "ShilongLiu/GroundingDINO"
 ckpt_filenmae = "groundingdino_swint_ogc.pth"
-sam_checkpoint = './checkpoints/sam_vit_h_4b8939.pth' 
+# sam_checkpoint = './checkpoints/sam_vit_h_4b8939.pth' 
+sam_checkpoint = './checkpoints/sam_vit_b_01ec64.pth' 
+
+
 output_dir = "outputs"
 if os.environ.get('IS_MY_DEBUG') is None:
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
