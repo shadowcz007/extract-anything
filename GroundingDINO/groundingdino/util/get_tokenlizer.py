@@ -1,5 +1,9 @@
 from transformers import AutoTokenizer, BertModel, BertTokenizer, RobertaModel, RobertaTokenizerFast
 
+import os
+current_path = os.path.abspath(os.path.dirname(__file__))
+mp=os.path.abspath(os.path.join(current_path,'../../../checkpoints/bert-base-uncased'))
+
 
 def get_tokenlizer(text_encoder_type):
     if not isinstance(text_encoder_type, str):
@@ -14,14 +18,12 @@ def get_tokenlizer(text_encoder_type):
             )
     print("final text_encoder_type: {}".format(text_encoder_type))
 
-    tokenizer = AutoTokenizer.from_pretrained(text_encoder_type)
+    tokenizer = AutoTokenizer.from_pretrained(mp)
     return tokenizer
 
 
 def get_pretrained_language_model(text_encoder_type):
-    import os
-    current_path = os.path.abspath(os.path.dirname(__file__))
-    mp=os.path.abspath(os.path.join(current_path,'../../../checkpoints/bert-base-uncased'))
+    
     if text_encoder_type == "bert-base-uncased":
         print("bert-base-uncased:::::",mp)
         return BertModel.from_pretrained(mp)
